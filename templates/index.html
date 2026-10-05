@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百度链接 API 自动提取与批量推送系统</title>
+    <link rel="stylesheet" href="/static/css/style.css?v={{ v }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>百度 API 推送管理平台</h1>
+                    <span class="sub-title">整站链接智能遍历 & 状态去重批量推送系统</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="site-selector-box">
+                    <label for="currentSiteSelect"><i class="fa-solid fa-globe"></i> 当前站点：</label>
+                    <select id="currentSiteSelect" class="form-select">
+                        <option value="">-- 请选择或添加站点 --</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" id="btnManageSites" title="配置站点信息">
+                        <i class="fa-solid fa-sliders"></i> 站点管理
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 统计指标卡片 -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon quota-icon"><i class="fa-solid fa-database"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">今日剩余配额 (Quota)</span>
+                    <span class="stat-value" id="statQuota">--</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon total-icon"><i class="fa-solid fa-link"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">已抓取总链接数</span>
+                    <span class="stat-value" id="statTotal">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon unsubmit-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">待推送 (未提交)</span>
+                    <span class="stat-value highlight" id="statUnsubmitted">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">成功推送 (Success)</span>
+                    <span class="stat-value text-success" id="statSuccess">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon failed-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">推送失败 (Failed)</span>
+                    <span class="stat-value text-danger" id="statFailed">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 爬虫控制卡片 -->
+        <section class="card crawler-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-spider"></i> 整站链接智能遍历引擎</h2>
+                <div class="crawler-status-badge" id="crawlerBadge">
+                    <span class="dot"></span> <span id="crawlerStateText">就绪待命</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="crawl-controls-row">
+                    <div class="form-group flex-grow">
+                        <label for="crawlStartUrl">起始遍历网址 (Start URL)：</label>
+                        <div class="input-with-action">
+                            <input type="url" id="crawlStartUrl" class="form-input" placeholder="例如：https://www.example.com">
+                            <button class="btn btn-outline" id="btnUseSiteHome" title="快捷填入当前站点的首页">
+                                <i class="fa-solid fa-house"></i> 填入站点首页
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group w-140">
+                        <label for="crawlMaxDepth">遍历深度 (Depth)：</label>
+                        <select id="crawlMaxDepth" class="form-select">
+                            <option value="1">1层 (仅当前页链接)</option>
+                            <option value="2" selected>2层 (当前页及下一级)</option>
+                            <option value="3">3层 (深入三级页面)</option>
+                            <option value="4">4层 (四级深度)</option>
+                            <option value="5">5层 (全网深爬)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group w-140">
+                        <label for="crawlMaxPages">最大抓取页面数：</label>
+                        <select id="crawlMaxPages" class="form-select">
+                            <option value="50">50 页</option>
+                            <option value="100" selected>100 页</option>
+                            <option value="200">200 页</option>
+                            <option value="500">500 页</option>
+                            <option value="1000">1000 页</option>
+                            <option value="2000">2000 页</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group action-buttons">
+                        <button class="btn btn-primary" id="btnToggleCrawl" onclick="window.handleCrawlToggle && window.handleCrawlToggle()">
+                            <i class="fa-solid fa-play" id="crawlBtnIcon"></i>
+                            <span id="crawlBtnText">开始智能遍历</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 抓取动态进度条 -->
+                <div class="crawl-progress-box" id="crawlProgressBox" style="display: none;">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="crawlProgressBar"></div>
+                    </div>
+                    <div class="progress-meta">
+                        <span id="crawlStatusMsg"><i class="fa-solid fa-spinner fa-spin"></i> 正在抓取中...</span>
+                        <span id="crawlCounts">已爬取: 0 页 | 已发现: 0 条有效链接</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据表格与批量推送卡片 -->
+        <section class="card table-card">
+            <div class="card-header border-bottom">
+                <div class="tab-filters">
+                    <button class="filter-tab active" data-status="all">全部链接 (<span id="tabCountAll">0</span>)</button>
+                    <button class="filter-tab" data-status="unsubmitted">待推送 (<span id="tabCountUnsubmitted">0</span>)</button>
+                    <button class="filter-tab" data-status="success">已成功 (<span id="tabCountSuccess">0</span>)</button>
+                    <button class="filter-tab" data-status="failed">失败 (<span id="tabCountFailed">0</span>)</button>
+                    <button class="filter-tab" data-status="ignored">已忽略 (<span id="tabCountIgnored">0</span>)</button>
+                </div>
+
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="搜索 URL 或标题...">
+                </div>
+            </div>
+
+            <!-- 工具栏与批量操作按钮 -->
+            <div class="toolbar-row">
+                <div class="select-tools">
+                    <span class="selection-indicator">已勾选 <strong id="selectedCount">0</strong> 条</span>
+                    <button class="btn btn-sm btn-select-unsubmitted" id="btnSelectOnlyUnsubmitted">
+                        <i class="fa-solid fa-filter-circle-dollar"></i> 仅勾选待推送链接 (防重复)
+                    </button>
+                    <button class="btn btn-sm btn-ghost" id="btnSelectAll">全选</button>
+                    <button class="btn btn-sm btn-ghost" id="btnDeselectAll">清空勾选</button>
+                    <button class="btn btn-sm btn-ghost" id="btnInvertSelect">反选</button>
+                </div>
+
+                <div class="action-tools">
+                    <button class="btn btn-outline btn-sm" id="btnManualAdd">
+                        <i class="fa-solid fa-plus"></i> 手动粘贴链接
+                    </button>
+                    <button class="btn btn-outline btn-sm" id="btnExport">
+                        <i class="fa-solid fa-file-export"></i> 导出链接
+                    </button>
+                    <button class="btn btn-ghost-danger btn-sm" id="btnClearUrls">
+                        <i class="fa-solid fa-trash-can"></i> 清空列表
+                    </button>
+                    <button class="btn btn-success" id="btnBatchPush">
+                        <i class="fa-solid fa-paper-plane"></i> 立即推送勾选链接到百度
+                    </button>
+                </div>
+            </div>
+
+            <!-- 链接列表表格 -->
+            <div class="table-responsive">
+                <table class="data-table" id="urlsTable">
+                    <thead>
+                        <tr>
+                            <th width="42"><input type="checkbox" id="selectAllCheckbox"></th>
+                            <th width="60">序号</th>
+                            <th>页面标题与链接 (URL)</th>
+                            <th width="85">抓取深度</th>
+                            <th width="110">状态</th>
+                            <th width="90">推送次数</th>
+                            <th width="160">最近推送结果</th>
+                            <th width="140">发现时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="urlsTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center empty-tip">
+                                <i class="fa-solid fa-inbox"></i>
+                                <p>请先在上方选择站点并点击【开始智能遍历】提取链接，或点击【手动粘贴链接】</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- 站点管理弹窗 -->
+    <div class="modal" id="siteModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="siteModalTitle"><i class="fa-solid fa-sitemap"></i> 站点与百度 API 准入密钥管理</h3>
+                    <button class="btn-close" id="btnCloseSiteModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- 站点表单 -->
+                    <div class="site-form-card">
+                        <input type="hidden" id="editSiteId" value="">
+                        <div class="form-row">
+                            <div class="form-group flex-grow">
+                                <label for="siteName">站点名称 / 备注：</label>
+                                <input type="text" id="siteName" class="form-input" placeholder="例如：我的官方博客">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-grow">
+                                <label for="siteDomain">网站主域名 (site)：</label>
+                                <input type="text" id="siteDomain" class="form-input" placeholder="如 www.example.com (与站长平台一致)">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-grow">
+                                <label for="siteToken">百度准入密钥 (token)：</label>
+                                <input type="text" id="siteToken" class="form-input" placeholder="站长平台生成的 16 位 token">
+                            </div>
+                        </div>
+                        <div class="form-actions-inline">
+                            <button class="btn btn-primary" id="btnSaveSite">
+                                <i class="fa-solid fa-check"></i> 保存配置
+                            </button>
+                            <button class="btn btn-outline" id="btnResetSiteForm" style="display:none;">取消编辑</button>
+                        </div>
+                    </div>
+
+                    <!-- 已有站点列表 -->
+                    <h4 class="sub-heading">已配置站点列表</h4>
+                    <div class="site-list-box" id="sitesListBox">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手动添加链接弹窗 -->
+    <div class="modal" id="manualModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-paste"></i> 手动批量录入链接</h3>
+                    <button class="btn-close" id="btnCloseManualModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-desc">每行输入一个完整的网址（必须包含 http:// 或 https://），系统会自动去重并绑定到当前站点：</p>
+                    <textarea id="manualUrlsText" rows="10" class="form-textarea" placeholder="https://www.example.com/page1.html&#10;https://www.example.com/page2.html"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="btnCancelManual">取消</button>
+                    <button class="btn btn-primary" id="btnSubmitManual"><i class="fa-solid fa-check"></i> 导入链接库</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 推送结果汇总弹窗 -->
+    <div class="modal" id="pushResultModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-square-poll-vertical"></i> 百度 API 推送结果反馈</h3>
+                    <button class="btn-close" id="btnClosePushResultModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="result-summary-box" id="resultSummaryBox">
+                        <!-- 动态渲染推送结果 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="btnConfirmPushResult">我知道了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知 Toast 浮动提示 -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/js/main.js?v={{ v }}"></script>
+</body>
+</html>
