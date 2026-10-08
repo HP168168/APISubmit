@@ -15,6 +15,7 @@ if sys.platform.startswith('win'):
 from flask import Flask, render_template, request, jsonify, Response
 import database
 from crawler import crawler
+from url_checker import url_checker
 import baidu_pusher
 
 import time
@@ -79,13 +80,38 @@ def list_urls():
         return jsonify({'code': 1, 'message': '缺少 site_id 参数'}), 400
     
     status = request.args.get('status', 'all')
+    http_status = request.args.get('http_status', 'all')
     keyword = request.args.get('keyword', '').strip()
     limit = request.args.get('limit', default=1000, type=int)
     offset = request.args.get('offset', default=0, type=int)
 
-    urls = database.get_urls(site_id, status=status, keyword=keyword, limit=limit, offset=offset)
+    urls = database.get_urls(site_id, status=status, http_status=http_status, keyword=keyword, limit=limit, offset=offset)
     stats = database.get_url_stats(site_id)
     return jsonify({'code': 0, 'data': urls, 'stats': stats})
+
+@app.route('/api/urls/check-status', methods=['POST'])
+def check_urls_status():
+    data = request.json or {}
+    site_id = data.get('site_id')
+    only_unchecked = data.get('only_unchecked', False)
+    if not site_id:
+        return jsonify({'code': 1, 'message': '缺少 site_id 参数'}), 400
+    
+    ok, msg = url_checker.start(site_id, only_unchecked=only_unchecked)
+    if ok:
+        return jsonify({'code': 0, 'message': msg})
+    else:
+        return jsonify({'code': 1, 'message': msg}), 400
+
+@app.route('/api/urls/check-status/progress', methods=['GET'])
+def check_urls_progress():
+    st = url_checker.get_status()
+    return jsonify({'code': 0, 'data': st})
+
+@app.route('/api/urls/check-status/stop', methods=['POST'])
+def stop_check_status():
+    url_checker.stop()
+    return jsonify({'code': 0, 'message': '已发出停止请求'})
 
 @app.route('/api/urls/manual', methods=['POST'])
 def add_manual_urls():
@@ -99,7 +125,7 @@ def add_manual_urls():
     url_items = []
     for line in lines:
         if line.startswith(('http://', 'https://')):
-            url_items.append({'url': line, 'title': '手动录入', 'depth': 1, 'source_page': '手动粘贴'})
+            url_items.append({'url': line, 'title': '手动录入', 'depth': 1, 'source_page': '手动粘贴', 'http_status': 0})
 
     database.bulk_insert_urls(site_id, url_items)
     return jsonify({'code': 0, 'message': f'成功录入 {len(url_items)} 条链接'})
@@ -197,11 +223,12 @@ def export_urls():
     urls = database.get_urls(site_id, status=status, limit=50000)
     
     if export_type == 'csv':
-        lines = ["URL,页面标题,状态,推送次数,最近推送时间,推送结果"]
+        lines = ["URL,页面标题,HTTP状态,推送状态,推送次数,最近推送时间,推送结果"]
         for row in urls:
             safe_title = (row['title'] or '').replace(',', ' ')
             safe_res = (row['last_push_result'] or '').replace(',', ' ')
-            lines.append(f"{row['url']},{safe_title},{row['status']},{row['push_count']},{row['last_push_at']},{safe_res}")
+            code_str = str(row['http_status']) if row.get('http_status') else '未检测'
+            lines.append(f"{row['url']},{safe_title},{code_str},{row['status']},{row['push_count']},{row['last_push_at']},{safe_res}")
         content = "\ufeff" + "\n".join(lines)
         return Response(
             content,

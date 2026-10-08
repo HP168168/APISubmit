@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>百度链接 API 自动提取与批量推送系统</title>
+    <title>百度链接 API 快速批量推送</title>
     <link rel="stylesheet" href="/static/css/style.css?v={{ v }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- 顶部导航 -->
@@ -16,7 +18,7 @@
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>百度 API 推送管理平台</h1>
+                    <h1>百度链接 API 快速批量推送</h1>
                     <span class="sub-title">整站链接智能遍历 & 状态去重批量推送系统</span>
                 </div>
             </div>
@@ -71,6 +73,13 @@
                     <span class="stat-value text-danger" id="statFailed">0</span>
                 </div>
             </div>
+            <div class="stat-card stat-card-deadlink">
+                <div class="stat-icon deadlink-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">404 死链 (Dead Link)</span>
+                    <span class="stat-value text-danger" id="stat404">0</span>
+                </div>
+            </div>
         </section>
 
         <!-- 爬虫控制卡片 -->
@@ -86,7 +95,8 @@
                     <div class="form-group flex-grow">
                         <label for="crawlStartUrl">起始遍历网址 (Start URL)：</label>
                         <div class="input-with-action">
-                            <input type="url" id="crawlStartUrl" class="form-input" placeholder="例如：https://www.example.com">
+                            <input type="url" id="crawlStartUrl" class="form-input"
+                                placeholder="例如：https://www.example.com">
                             <button class="btn btn-outline" id="btnUseSiteHome" title="快捷填入当前站点的首页">
                                 <i class="fa-solid fa-house"></i> 填入站点首页
                             </button>
@@ -117,7 +127,8 @@
                     </div>
 
                     <div class="form-group action-buttons">
-                        <button class="btn btn-primary" id="btnToggleCrawl" onclick="window.handleCrawlToggle && window.handleCrawlToggle()">
+                        <button class="btn btn-primary" id="btnToggleCrawl"
+                            onclick="window.handleCrawlToggle && window.handleCrawlToggle()">
                             <i class="fa-solid fa-play" id="crawlBtnIcon"></i>
                             <span id="crawlBtnText">开始智能遍历</span>
                         </button>
@@ -141,11 +152,19 @@
         <section class="card table-card">
             <div class="card-header border-bottom">
                 <div class="tab-filters">
-                    <button class="filter-tab active" data-status="all">全部链接 (<span id="tabCountAll">0</span>)</button>
-                    <button class="filter-tab" data-status="unsubmitted">待推送 (<span id="tabCountUnsubmitted">0</span>)</button>
-                    <button class="filter-tab" data-status="success">已成功 (<span id="tabCountSuccess">0</span>)</button>
-                    <button class="filter-tab" data-status="failed">失败 (<span id="tabCountFailed">0</span>)</button>
-                    <button class="filter-tab" data-status="ignored">已忽略 (<span id="tabCountIgnored">0</span>)</button>
+                    <button class="filter-tab active" data-status="all" data-http="all">全部链接 (<span
+                            id="tabCountAll">0</span>)</button>
+                    <button class="filter-tab" data-status="unsubmitted" data-http="all">待推送 (<span
+                            id="tabCountUnsubmitted">0</span>)</button>
+                    <button class="filter-tab tab-404-btn" data-status="all" data-http="404"><i
+                            class="fa-solid fa-triangle-exclamation"></i> 404死链 (<span
+                            id="tabCount404">0</span>)</button>
+                    <button class="filter-tab" data-status="success" data-http="all">已成功 (<span
+                            id="tabCountSuccess">0</span>)</button>
+                    <button class="filter-tab" data-status="failed" data-http="all">失败 (<span
+                            id="tabCountFailed">0</span>)</button>
+                    <button class="filter-tab" data-status="ignored" data-http="all">已忽略 (<span
+                            id="tabCountIgnored">0</span>)</button>
                 </div>
 
                 <div class="search-box">
@@ -154,12 +173,31 @@
                 </div>
             </div>
 
+            <!-- HTTP 状态检测进度条 -->
+            <div class="check-progress-box" id="checkProgressBox" style="display: none;">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill progress-bar-check" id="checkProgressBar"></div>
+                </div>
+                <div class="progress-meta">
+                    <span id="checkStatusMsg"><i class="fa-solid fa-spinner fa-spin"></i> 正在检测链接 HTTP 状态码...</span>
+                    <span id="checkCounts">已检测: 0/0 | 200正常: 0 | 404死链: 0</span>
+                    <button class="btn btn-xs btn-outline-danger" id="btnStopCheck"
+                        style="margin-left: 10px;">停止检测</button>
+                </div>
+            </div>
+
             <!-- 工具栏与批量操作按钮 -->
             <div class="toolbar-row">
                 <div class="select-tools">
-                    <span class="selection-indicator">已勾选 <strong id="selectedCount">0</strong> 条</span>
+                    <span class="selection-indicator">已勾选 <strong id="selectedCount">0</strong> 条 <span
+                            id="selectedWarningBadge" style="display:none;" class="badge badge-warning-count"><i
+                                class="fa-solid fa-triangle-exclamation"></i> 含 <span id="selected404Count">0</span>
+                            条404</span></span>
                     <button class="btn btn-sm btn-select-unsubmitted" id="btnSelectOnlyUnsubmitted">
                         <i class="fa-solid fa-filter-circle-dollar"></i> 仅勾选待推送链接 (防重复)
+                    </button>
+                    <button class="btn btn-sm btn-ghost-danger" id="btnDeselect404" title="快速从已勾选中剔除 404 死链">
+                        <i class="fa-solid fa-filter-circle-xmark"></i> 剔除404勾选
                     </button>
                     <button class="btn btn-sm btn-ghost" id="btnSelectAll">全选</button>
                     <button class="btn btn-sm btn-ghost" id="btnDeselectAll">清空勾选</button>
@@ -167,6 +205,10 @@
                 </div>
 
                 <div class="action-tools">
+                    <button class="btn btn-outline-primary btn-sm" id="btnCheckStatus"
+                        title="多线程快速检测所有链接 HTTP 状态码并提取网页标题">
+                        <i class="fa-solid fa-stethoscope"></i> 一键检测状态码
+                    </button>
                     <button class="btn btn-outline btn-sm" id="btnManualAdd">
                         <i class="fa-solid fa-plus"></i> 手动粘贴链接
                     </button>
@@ -188,18 +230,19 @@
                     <thead>
                         <tr>
                             <th width="42"><input type="checkbox" id="selectAllCheckbox"></th>
-                            <th width="60">序号</th>
+                            <th width="50">序号</th>
                             <th>页面标题与链接 (URL)</th>
-                            <th width="85">抓取深度</th>
-                            <th width="110">状态</th>
-                            <th width="90">推送次数</th>
-                            <th width="160">最近推送结果</th>
+                            <th width="115">HTTP 状态</th>
+                            <th width="75">抓取深度</th>
+                            <th width="105">推送状态</th>
+                            <th width="85">推送次数</th>
+                            <th width="150">最近推送结果</th>
                             <th width="140">发现时间</th>
                         </tr>
                     </thead>
                     <tbody id="urlsTableBody">
                         <tr>
-                            <td colspan="8" class="text-center empty-tip">
+                            <td colspan="9" class="text-center empty-tip">
                                 <i class="fa-solid fa-inbox"></i>
                                 <p>请先在上方选择站点并点击【开始智能遍历】提取链接，或点击【手动粘贴链接】</p>
                             </td>
@@ -231,7 +274,8 @@
                         <div class="form-row">
                             <div class="form-group flex-grow">
                                 <label for="siteDomain">网站主域名 (site)：</label>
-                                <input type="text" id="siteDomain" class="form-input" placeholder="如 www.example.com (与站长平台一致)">
+                                <input type="text" id="siteDomain" class="form-input"
+                                    placeholder="如 www.example.com (与站长平台一致)">
                             </div>
                         </div>
                         <div class="form-row">
@@ -268,11 +312,13 @@
                 </div>
                 <div class="modal-body">
                     <p class="modal-desc">每行输入一个完整的网址（必须包含 http:// 或 https://），系统会自动去重并绑定到当前站点：</p>
-                    <textarea id="manualUrlsText" rows="10" class="form-textarea" placeholder="https://www.example.com/page1.html&#10;https://www.example.com/page2.html"></textarea>
+                    <textarea id="manualUrlsText" rows="10" class="form-textarea"
+                        placeholder="https://www.example.com/page1.html&#10;https://www.example.com/page2.html"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" id="btnCancelManual">取消</button>
-                    <button class="btn btn-primary" id="btnSubmitManual"><i class="fa-solid fa-check"></i> 导入链接库</button>
+                    <button class="btn btn-primary" id="btnSubmitManual"><i class="fa-solid fa-check"></i>
+                        导入链接库</button>
                 </div>
             </div>
         </div>
@@ -298,9 +344,47 @@
         </div>
     </div>
 
+    <!-- 404 死链提交风险警告弹窗 -->
+    <div class="modal modal-warning" id="warning404Modal">
+        <div class="modal-dialog modal-dialog-warning">
+            <div class="modal-content">
+                <div class="modal-header header-danger">
+                    <h3><i class="fa-solid fa-triangle-exclamation text-danger"></i> 404 死链提交风险警告</h3>
+                    <button class="btn-close" id="btnCloseWarning404Modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-alert-card">
+                        <div class="warning-icon-large">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="warning-text-content">
+                            <h4>检测到您勾选了 <span class="danger-count" id="warning404Count">0</span> 条 404 死链！</h4>
+                            <p>向百度搜索资源平台提交 404 失效死链，不仅<strong>无法收录</strong>，还会<strong>白白扣除每日 API
+                                    推送配额</strong>，并可能被百度算法判定为低质量网站。强烈建议剔除后仅推送有效链接！</p>
+                        </div>
+                    </div>
+
+                    <h4 class="sub-heading" style="margin-top:16px;">检测到的 404 死链清单：</h4>
+                    <div class="deadlinks-list-box" id="deadlinksListBox">
+                        <!-- 动态展示 404 链接 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="btnCancelWarning404">取消提交</button>
+                    <button class="btn btn-ghost-danger" id="btnForcePushAll">仍要强行推送 (包含404)</button>
+                    <button class="btn btn-success" id="btnExclude404AndPush">
+                        <i class="fa-solid fa-shield-halved"></i> 【推荐】自动剔除404，仅推送有效链接 (<span
+                            id="validPushCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 通知 Toast 浮动提示 -->
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="/static/js/main.js?v={{ v }}"></script>
 </body>
+
 </html>

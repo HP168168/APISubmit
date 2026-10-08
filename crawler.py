@@ -153,8 +153,21 @@ class SiteCrawler:
 
                 try:
                     resp = session.get(current_url, timeout=10, allow_redirects=True)
+                    http_code = resp.status_code
+
+                    # 404 错误页面
+                    if http_code == 404:
+                        database.add_or_update_url(site_id, current_url, title='404 页面不存在', depth=current_depth, source_page=source_page, http_status=404)
+                        continue
+
+                    # 其它非 200 页面
+                    if http_code != 200:
+                        database.add_or_update_url(site_id, current_url, title=f'{http_code} 状态异常', depth=current_depth, source_page=source_page, http_status=http_code)
+                        continue
+
                     content_type = resp.headers.get('Content-Type', '').lower()
                     if 'text/html' not in content_type:
+                        database.add_or_update_url(site_id, current_url, depth=current_depth, source_page=source_page, http_status=http_code)
                         continue
 
                     # 处理重定向后的 URL
@@ -167,8 +180,8 @@ class SiteCrawler:
                     tree = html.fromstring(resp.content)
                     page_title = self._extract_title(tree)
                     
-                    # 更新当前页的标题
-                    database.add_or_update_url(site_id, final_url, title=page_title, depth=current_depth, source_page=source_page)
+                    # 更新当前页的标题与 200 正常状态码
+                    database.add_or_update_url(site_id, final_url, title=page_title, depth=current_depth, source_page=source_page, http_status=200)
 
                     # 提取链接
                     new_links_batch = []
@@ -187,7 +200,8 @@ class SiteCrawler:
                                     'url': clean_url,
                                     'title': '', # 等后续抓取或列表展示
                                     'depth': current_depth + 1,
-                                    'source_page': final_url
+                                    'source_page': final_url,
+                                    'http_status': 0
                                 }
                                 new_links_batch.append(item)
 
@@ -200,8 +214,12 @@ class SiteCrawler:
                         with self.lock:
                             self.status['found_count'] = len(discovered_urls)
 
+                except requests.exceptions.RequestException as e:
+                    # 网络请求报错，可能是 404 或死链
+                    res_code = getattr(e.response, 'status_code', 404) if hasattr(e, 'response') and e.response is not None else 404
+                    database.add_or_update_url(site_id, current_url, title='无法访问或死链', depth=current_depth, source_page=source_page, http_status=res_code)
                 except Exception as e:
-                    # 抓取单页出错继续下一页
+                    # 其它解析错误
                     pass
 
                 if delay > 0:
@@ -214,6 +232,12 @@ class SiteCrawler:
                 else:
                     self.status['state'] = 'completed'
                     self.status['message'] = f'抓取完成！共访问 {len(visited_pages)} 页，发现有效链接 {len(discovered_urls)} 条'
+                    # 抓取完成后，自动异步触发对新发现链接的状态码与标题并发检测
+                    try:
+                        from url_checker import url_checker
+                        url_checker.start(site_id, only_unchecked=True)
+                    except Exception:
+                        pass
         except Exception as e:
             with self.lock:
                 self.status['state'] = 'error'

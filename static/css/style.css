@@ -133,21 +133,22 @@ body {
 /* ================= 统计卡片 ================= */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
     margin-bottom: 20px;
 }
 
 .stat-card {
     background: var(--bg-card);
     border-radius: var(--radius-md);
-    padding: 18px 20px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 0;
 }
 
 .stat-card:hover {
@@ -156,13 +157,14 @@ body {
 }
 
 .stat-icon {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 18px;
+    flex-shrink: 0;
 }
 
 .quota-icon { background: #e0e7ff; color: #4338ca; }
@@ -174,16 +176,21 @@ body {
 .stat-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .stat-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stat-value {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.2;
@@ -193,6 +200,18 @@ body {
 .stat-value.highlight { color: #d97706; }
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
+
+@media (max-width: 1100px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 
 /* ================= 通用卡片 ================= */
 .card {
@@ -724,3 +743,223 @@ body {
     from { opacity: 0; transform: translateY(-14px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ================= 404 死链醒目标记与状态样式 ================= */
+/* 404 死链行红色醒目标记 */
+.data-table tbody tr.row-status-404 {
+    background-color: #fff1f2 !important;
+    border-left: 4px solid #ef4444;
+}
+
+.data-table tbody tr.row-status-404:hover {
+    background-color: #ffe4e6 !important;
+}
+
+.data-table tbody tr.row-status-404.selected-row {
+    background-color: #fee2e2 !important;
+}
+
+.data-table tbody tr.row-status-404 .url-title {
+    color: #991b1b;
+    font-weight: 700;
+}
+
+.data-table tbody tr.row-status-404 .url-link {
+    color: #dc2626;
+}
+
+/* HTTP 状态码徽章 */
+.badge-http {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+}
+
+.badge-http-200 {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+/* 404 红色醒目徽章，带高亮与警示感 */
+.badge-http-404 {
+    background: #ef4444;
+    color: #ffffff !important;
+    border: 1px solid #dc2626;
+    box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+    animation: pulseWarning 2s infinite ease-in-out;
+}
+
+@keyframes pulseWarning {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.94; transform: scale(1.02); }
+}
+
+.badge-http-30x {
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.badge-http-500 {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.badge-http-uncheck {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+}
+
+/* 统计卡片与过滤按钮扩展 */
+.stat-card-deadlink {
+    border-left: 4px solid #ef4444;
+}
+
+.deadlink-icon {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+}
+
+.tab-404-btn {
+    color: #dc2626 !important;
+}
+
+.tab-404-btn.active {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+
+.badge-warning-count {
+    background: #ef4444;
+    color: #ffffff;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-left: 6px;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-outline-primary {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+.btn-outline-primary:hover {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.btn-outline-danger {
+    background: #fff;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+.btn-outline-danger:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* 检测状态码进度条 */
+.check-progress-box {
+    padding: 14px 20px;
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+}
+
+.progress-bar-check {
+    background: linear-gradient(90deg, #10b981, #059669);
+    height: 6px;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* 404 警告弹窗样式 */
+.modal-dialog-warning {
+    max-width: 660px;
+}
+
+.header-danger {
+    background: #fef2f2;
+    border-bottom: 1px solid #fee2e2;
+}
+
+.warning-alert-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: #fff1f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.warning-icon-large {
+    font-size: 32px;
+    color: #ef4444;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.warning-text-content h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #991b1b;
+    margin-bottom: 6px;
+}
+
+.warning-text-content p {
+    font-size: 13px;
+    color: #7f1d1d;
+    line-height: 1.6;
+}
+
+.danger-count {
+    font-size: 17px;
+    font-weight: 800;
+    color: #b91c1c;
+    text-decoration: underline;
+}
+
+.deadlinks-list-box {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #fee2e2;
+    background: #fafafa;
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+}
+
+.deadlink-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 4px;
+    border-bottom: 1px dashed #f1f5f9;
+    gap: 10px;
+}
+
+.deadlink-item:last-child {
+    border-bottom: none;
+}
+
+.deadlink-url {
+    color: #dc2626;
+    word-break: break-all;
+}
+
