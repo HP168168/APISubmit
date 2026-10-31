@@ -177,7 +177,7 @@ class SiteCrawler:
                     if resp.encoding is None or resp.encoding.lower() == 'iso-8859-1':
                         resp.encoding = resp.apparent_encoding or 'utf-8'
 
-                    tree = html.fromstring(resp.content)
+                    tree = html.fromstring(resp.text)
                     page_title = self._extract_title(tree)
                     
                     # 更新当前页的标题与 200 正常状态码

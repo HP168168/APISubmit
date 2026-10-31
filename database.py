@@ -62,6 +62,33 @@ def init_db():
     
     conn.commit()
     conn.close()
+    
+    # 自动纠正常见的 ISO-8859-1 中文乱码标题
+    fix_garbled_titles()
+
+def fix_garbled_titles():
+    """检测并自动修复数据库中因未正确识别 UTF-8 编码而导致的 Latin-1 乱码标题"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, title FROM urls WHERE length(title) > 0")
+        rows = cursor.fetchall()
+        updates = []
+        for row in rows:
+            t = row['title']
+            try:
+                fixed = t.encode('latin-1', errors='replace').decode('utf-8', errors='ignore').strip()
+                if any('\u4e00' <= ch <= '\u9fff' for ch in fixed) and not any('\u4e00' <= ch <= '\u9fff' for ch in t):
+                    updates.append((fixed, row['id']))
+            except Exception:
+                pass
+        if updates:
+            cursor.executemany("UPDATE urls SET title = ? WHERE id = ?", updates)
+            conn.commit()
+        conn.close()
+        return len(updates)
+    except Exception:
+        return 0
 
 # 站点相关操作
 def get_all_sites():

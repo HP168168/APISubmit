@@ -125,11 +125,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.code === 0) {
                 state.sites = data.data;
+
+                // 优先从 localStorage 恢复用户最后一次选择的站点
+                const savedSiteId = localStorage.getItem('last_selected_site_id');
+                const targetSite = (state.currentSiteId && state.sites.find(s => String(s.id) === String(state.currentSiteId)))
+                    || (savedSiteId && state.sites.find(s => String(s.id) === String(savedSiteId)))
+                    || (state.sites.length > 0 ? state.sites[0] : null);
+
+                if (targetSite) {
+                    state.currentSiteId = targetSite.id;
+                } else {
+                    state.currentSiteId = null;
+                }
+
                 renderSiteOptions();
-                if (state.sites.length > 0 && !state.currentSiteId) {
-                    selectSite(state.sites[0].id);
-                } else if (state.currentSiteId) {
-                    selectSite(state.currentSiteId);
+
+                if (targetSite) {
+                    selectSite(targetSite.id);
+                } else {
+                    loadUrls();
                 }
             }
         } catch (e) {
@@ -140,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSiteOptions() {
         currentSiteSelect.innerHTML = state.sites.length === 0
             ? '<option value="">-- 暂无配置站点，请点击右侧添加 --</option>'
-            : state.sites.map(s => `<option value="${s.id}" ${s.id == state.currentSiteId ? 'selected' : ''}>${s.name} (${s.site})</option>`).join('');
+            : state.sites.map(s => `<option value="${s.id}" ${String(s.id) === String(state.currentSiteId) ? 'selected' : ''}>${s.name} (${s.site})</option>`).join('');
     }
 
     function formatSiteUrl(domain) {
@@ -155,7 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function selectSite(siteId) {
         state.currentSiteId = siteId;
         currentSiteSelect.value = siteId;
-        const site = state.sites.find(s => s.id == siteId);
+        // 记住最后一次选择的站点 ID
+        try {
+            localStorage.setItem('last_selected_site_id', String(siteId));
+        } catch (e) {}
+
+        const site = state.sites.find(s => String(s.id) === String(siteId));
         if (site && crawlStartUrl) {
             crawlStartUrl.value = formatSiteUrl(site.site);
         }
@@ -561,7 +580,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${escapeHtml(row.last_push_result || (row.status === 'unsubmitted' ? '尚未提交' : '--'))}
                         </span>
                     </td>
-                    <td style="font-size:12px; color:var(--text-muted);">${row.discovered_at || '--'}</td>
+                    <td class="text-center" style="white-space: nowrap;" title="发现时间：${escapeHtml(row.discovered_at || '--')}">
+                        <div class="engine-btn-group">
+                            <button type="button" class="btn-engine-test btn-engine-site" data-action="site" data-url="${escapeHtml(row.url)}" title="在勾选的搜索引擎中执行 site: 查询 (测试收录)">
+                                <i class="fa-solid fa-crosshairs"></i> site:指令
+                            </button>
+                            <button type="button" class="btn-engine-test btn-engine-search" data-action="search" data-url="${escapeHtml(row.url)}" title="在勾选的搜索引擎中直接检索完整 URL">
+                                <i class="fa-solid fa-magnifying-glass"></i> 直接搜索
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -1129,7 +1157,115 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ================== 搜索引擎跳转测试配置 ==================
+    const ENGINE_CONFIGS = {
+        baidu: {
+            name: '百度',
+            getSiteUrl: (url) => {
+                const clean = url.replace(/^https?:\/\//i, '').split('#')[0];
+                return `https://www.baidu.com/s?wd=site%3A${encodeURIComponent(clean)}`;
+            },
+            getSearchUrl: (url) => {
+                return `https://www.baidu.com/s?wd=${encodeURIComponent(url.split('#')[0])}`;
+            }
+        },
+        bing: {
+            name: '必应',
+            getSiteUrl: (url) => {
+                const clean = url.replace(/^https?:\/\//i, '').split('#')[0];
+                return `https://cn.bing.com/search?q=site%3A${encodeURIComponent(clean)}`;
+            },
+            getSearchUrl: (url) => {
+                return `https://cn.bing.com/search?q=${encodeURIComponent(url.split('#')[0])}`;
+            }
+        },
+        google: {
+            name: '谷歌',
+            getSiteUrl: (url) => {
+                const clean = url.replace(/^https?:\/\//i, '').split('#')[0];
+                return `https://www.google.com/search?q=site%3A${encodeURIComponent(clean)}`;
+            },
+            getSearchUrl: (url) => {
+                return `https://www.google.com/search?q=${encodeURIComponent(url.split('#')[0])}`;
+            }
+        },
+        '360': {
+            name: '360',
+            getSiteUrl: (url) => {
+                const clean = url.replace(/^https?:\/\//i, '').split('#')[0];
+                return `https://www.so.com/s?q=site%3A${encodeURIComponent(clean)}`;
+            },
+            getSearchUrl: (url) => {
+                return `https://www.so.com/s?q=${encodeURIComponent(url.split('#')[0])}`;
+            }
+        },
+        sogou: {
+            name: '搜狗',
+            getSiteUrl: (url) => {
+                const clean = url.replace(/^https?:\/\//i, '').split('#')[0];
+                return `https://www.sogou.com/web?query=site%3A${encodeURIComponent(clean)}`;
+            },
+            getSearchUrl: (url) => {
+                return `https://www.sogou.com/web?query=${encodeURIComponent(url.split('#')[0])}`;
+            }
+        }
+    };
+
+    function initEngineSelection() {
+        let saved = localStorage.getItem('preferred_search_engine');
+        if (!saved) {
+            try {
+                const old = JSON.parse(localStorage.getItem('preferred_search_engines'));
+                if (Array.isArray(old) && old.length > 0) saved = old[0];
+            } catch (e) {}
+        }
+        if (!saved || !ENGINE_CONFIGS[saved]) {
+            saved = 'baidu';
+        }
+
+        const radios = document.querySelectorAll('input[name="testEngine"]');
+        radios.forEach(rb => {
+            rb.checked = (rb.value === saved);
+            rb.addEventListener('change', () => {
+                if (rb.checked) {
+                    localStorage.setItem('preferred_search_engine', rb.value);
+                }
+            });
+        });
+    }
+
+    function getSelectedEngine() {
+        const checked = document.querySelector('input[name="testEngine"]:checked');
+        return checked ? checked.value : 'baidu';
+    }
+
+    function handleEngineJump(action, rawUrl) {
+        if (!rawUrl) return;
+        const engineKey = getSelectedEngine();
+        const cfg = ENGINE_CONFIGS[engineKey];
+        if (!cfg) {
+            showToast('请选择有效的测试搜索引擎', 'error');
+            return;
+        }
+
+        const targetUrl = (action === 'site') ? cfg.getSiteUrl(rawUrl) : cfg.getSearchUrl(rawUrl);
+        window.open(targetUrl, '_blank');
+    }
+
+    // 事件委托绑定表格内测试按钮点击
+    if (urlsTableBody) {
+        urlsTableBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-engine-test');
+            if (!btn) return;
+            e.preventDefault();
+            const action = btn.getAttribute('data-action');
+            const url = btn.getAttribute('data-url');
+            handleEngineJump(action, url);
+        });
+    }
+
     // 初始化
+    initEngineSelection();
     loadSites();
     checkInitialCrawlerStatus();
     checkInitialStatusCheck();

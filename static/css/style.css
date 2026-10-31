@@ -963,3 +963,185 @@ body {
     word-break: break-all;
 }
 
+.text-center {
+    text-align: center;
+}
+
+/* ================= 搜索引擎测试选择栏 ================= */
+.engine-selector-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 22px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.engine-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.engine-bar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.engine-checkbox-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.engine-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.engine-label input[type="radio"],
+.engine-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.engine-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.engine-label:hover .engine-badge {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+}
+
+.engine-label input[type="radio"]:focus-visible + .engine-badge,
+.engine-label input[type="checkbox"]:focus-visible + .engine-badge {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge,
+.engine-label input[type="checkbox"]:checked + .engine-badge {
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge-baidu,
+.engine-label input[type="checkbox"]:checked + .engine-badge-baidu {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge-bing,
+.engine-label input[type="checkbox"]:checked + .engine-badge-bing {
+    background: #0284c7;
+    border-color: #0284c7;
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge-google,
+.engine-label input[type="checkbox"]:checked + .engine-badge-google {
+    background: #ea4335;
+    border-color: #ea4335;
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge-360,
+.engine-label input[type="checkbox"]:checked + .engine-badge-360 {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.engine-label input[type="radio"]:checked + .engine-badge-sogou,
+.engine-label input[type="checkbox"]:checked + .engine-badge-sogou {
+    background: #f97316;
+    border-color: #f97316;
+}
+
+.engine-bar-right {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.engine-tip-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ================= 表格测试跳转按钮 ================= */
+.engine-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn-engine-test {
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    line-height: 1.4;
+}
+
+.btn-engine-test:active {
+    transform: scale(0.96);
+}
+
+.btn-engine-site {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.btn-engine-site:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+.btn-engine-search {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.btn-engine-search:hover {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.25);
+}
+

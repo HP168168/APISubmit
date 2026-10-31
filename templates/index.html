@@ -36,52 +36,6 @@
             </div>
         </header>
 
-        <!-- 统计指标卡片 -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon quota-icon"><i class="fa-solid fa-database"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">今日剩余配额 (Quota)</span>
-                    <span class="stat-value" id="statQuota">--</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon total-icon"><i class="fa-solid fa-link"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">已抓取总链接数</span>
-                    <span class="stat-value" id="statTotal">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon unsubmit-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">待推送 (未提交)</span>
-                    <span class="stat-value highlight" id="statUnsubmitted">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon success-icon"><i class="fa-solid fa-circle-check"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">成功推送 (Success)</span>
-                    <span class="stat-value text-success" id="statSuccess">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon failed-icon"><i class="fa-solid fa-circle-xmark"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">推送失败 (Failed)</span>
-                    <span class="stat-value text-danger" id="statFailed">0</span>
-                </div>
-            </div>
-            <div class="stat-card stat-card-deadlink">
-                <div class="stat-icon deadlink-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">404 死链 (Dead Link)</span>
-                    <span class="stat-value text-danger" id="stat404">0</span>
-                </div>
-            </div>
-        </section>
-
         <!-- 爬虫控制卡片 -->
         <section class="card crawler-card">
             <div class="card-header">
@@ -144,6 +98,52 @@
                         <span id="crawlStatusMsg"><i class="fa-solid fa-spinner fa-spin"></i> 正在抓取中...</span>
                         <span id="crawlCounts">已爬取: 0 页 | 已发现: 0 条有效链接</span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 统计指标卡片 -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon quota-icon"><i class="fa-solid fa-database"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">今日剩余配额 (Quota)</span>
+                    <span class="stat-value" id="statQuota">--</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon total-icon"><i class="fa-solid fa-link"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">已抓取总链接数</span>
+                    <span class="stat-value" id="statTotal">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon unsubmit-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">待推送 (未提交)</span>
+                    <span class="stat-value highlight" id="statUnsubmitted">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">成功推送 (Success)</span>
+                    <span class="stat-value text-success" id="statSuccess">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon failed-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">推送失败 (Failed)</span>
+                    <span class="stat-value text-danger" id="statFailed">0</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-deadlink">
+                <div class="stat-icon deadlink-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">404 死链 (Dead Link)</span>
+                    <span class="stat-value text-danger" id="stat404">0</span>
                 </div>
             </div>
         </section>
@@ -224,6 +224,42 @@
                 </div>
             </div>
 
+            <!-- 搜索引擎快捷测试单选栏 -->
+            <div class="engine-selector-bar">
+                <div class="engine-bar-left">
+                    <span class="engine-bar-title">
+                        <i class="fa-solid fa-magnifying-glass-location"></i> 搜索引擎测试：
+                    </span>
+                    <div class="engine-checkbox-group" id="engineCheckboxGroup">
+                        <label class="engine-label" title="百度搜索">
+                            <input type="radio" name="testEngine" value="baidu" checked>
+                            <span class="engine-badge engine-badge-baidu"><i class="fa-solid fa-paw"></i> 百度</span>
+                        </label>
+                        <label class="engine-label" title="微软 Bing 搜索">
+                            <input type="radio" name="testEngine" value="bing">
+                            <span class="engine-badge engine-badge-bing"><i class="fa-brands fa-microsoft"></i> 必应</span>
+                        </label>
+                        <label class="engine-label" title="谷歌 Google 搜索">
+                            <input type="radio" name="testEngine" value="google">
+                            <span class="engine-badge engine-badge-google"><i class="fa-brands fa-google"></i> 谷歌</span>
+                        </label>
+                        <label class="engine-label" title="360 安全搜索">
+                            <input type="radio" name="testEngine" value="360">
+                            <span class="engine-badge engine-badge-360"><i class="fa-solid fa-shield-halved"></i> 360</span>
+                        </label>
+                        <label class="engine-label" title="搜狗搜索">
+                            <input type="radio" name="testEngine" value="sogou">
+                            <span class="engine-badge engine-badge-sogou"><i class="fa-solid fa-dog"></i> 搜狗</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="engine-bar-right">
+                    <span class="engine-tip-text">
+                        <i class="fa-regular fa-circle-question"></i> 点击行末【site:指令】或【直接搜索】将在所选引擎中开新窗口测试
+                    </span>
+                </div>
+            </div>
+
             <!-- 链接列表表格 -->
             <div class="table-responsive">
                 <table class="data-table" id="urlsTable">
@@ -237,7 +273,7 @@
                             <th width="105">推送状态</th>
                             <th width="85">推送次数</th>
                             <th width="150">最近推送结果</th>
-                            <th width="140">发现时间</th>
+                            <th width="175" class="text-center">搜索引擎测试</th>
                         </tr>
                     </thead>
                     <tbody id="urlsTableBody">

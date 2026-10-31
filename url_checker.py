@@ -95,16 +95,36 @@ class UrlStatusChecker:
                 res_code = 0
                 new_title = ''
                 
+                # 判断当前标题是否为空、占位符或存在乱码
+                is_title_garbled = False
+                if curr_title:
+                    try:
+                        fixed_candidate = curr_title.encode('latin-1', errors='replace').decode('utf-8', errors='ignore').strip()
+                        if any('\u4e00' <= ch <= '\u9fff' for ch in fixed_candidate) and not any('\u4e00' <= ch <= '\u9fff' for ch in curr_title):
+                            is_title_garbled = True
+                            new_title = fixed_candidate
+                    except Exception:
+                        pass
+
                 try:
                     resp = requests.get(target_url, headers=headers, timeout=6, allow_redirects=True)
                     res_code = resp.status_code
                     
-                    # 尝试提取标题（如果原本没有标题或为默认占位）
-                    if (not curr_title or curr_title == '未获取页面标题') and 'text/html' in resp.headers.get('Content-Type', '').lower():
+                    # 尝试提取标题（如果原本没有标题、为默认占位或原标题为乱码）
+                    if (not curr_title or curr_title == '未获取页面标题' or is_title_garbled) and 'text/html' in resp.headers.get('Content-Type', '').lower():
                         try:
-                            m = re.search(r'<title[^>]*>(.*?)</title>', resp.text, re.IGNORECASE | re.DOTALL)
-                            if m:
-                                new_title = m.group(1).strip()[:100]
+                            # 自动修正编码：若响应头缺少 charset，requests 默认 ISO-8859-1 会将中文解码为乱码
+                            if resp.encoding is None or resp.encoding.lower() == 'iso-8859-1':
+                                resp.encoding = resp.apparent_encoding or 'utf-8'
+                            
+                            tree = html.fromstring(resp.text)
+                            title_nodes = tree.xpath('//title/text()')
+                            if title_nodes and title_nodes[0].strip():
+                                new_title = title_nodes[0].strip()[:100]
+                            else:
+                                m = re.search(r'<title[^>]*>(.*?)</title>', resp.text, re.IGNORECASE | re.DOTALL)
+                                if m:
+                                    new_title = m.group(1).strip()[:100]
                         except Exception:
                             pass
                             
